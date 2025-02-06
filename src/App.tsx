@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {MouseEvent, useRef, useState} from "react";
 import "./App.css";
 import {CompositeDecorator, Editor, EditorCommand, EditorState, getDefaultKeyBinding, Modifier,} from 'draft-js';
 import 'draft-js/dist/Draft.css';
@@ -123,6 +123,11 @@ function App() {
   const handleChange = (s: EditorState) => {
     setEditorState(s);
 
+    const selectionState = s.getSelection();
+    if (!selectionState.getHasFocus()){
+      return;
+    }
+
     updateMatchString(s);
     updateCaretPosition();
     updateSuggestions();
@@ -158,6 +163,10 @@ function App() {
     const newEditorState = EditorState.moveFocusToEnd(newEditorStateWithEntity);
 
     handleChange(newEditorState);
+  }
+
+  const selectSuggestion = (suggestion: string) => {
+    setSelectedSuggestion(suggestions.indexOf(suggestion))
   }
 
   const handleKeyCommand = (command: EditorCommand) => {
@@ -202,12 +211,25 @@ function App() {
       width: "120px",
       maxHeight: "100px",
       overflow: "hidden",
-      zIndex: 10
+      zIndex: 10,
+      userSelect: 'none'
     }}>
       <ol className='suggestions-list'>
         {suggestions.map((s, i) => {
-          const color = i === selectedSuggestion ? "red" : "white";
-          return <li style={{borderBottom: `1px dashed ${color}`, color: color}}>{s}</li>
+          const isSelectedSuggestion = i === selectedSuggestion;
+          const color = isSelectedSuggestion ? "red" : "white";
+
+          const onClick = (e: MouseEvent) => {
+            if (isSelectedSuggestion) {
+              doAutocomplete();
+            } else {
+              selectSuggestion(s);
+            }
+            e.preventDefault();
+            return false;
+          }
+
+          return <li style={{borderBottom: `1px dashed ${color}`, color: color}} onClick={onClick}>{s}</li>
         })}
       </ol>
     </div>
